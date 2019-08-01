@@ -1,9 +1,13 @@
 {
     "project_name": "project_name",
     "repo_name": "{{ cookiecutter.project_name.lower().replace(' ', '_') }}",
-    "author_name": "Your name (or your organization/company/team)",
+    "author_name": "Youngjoon Lee",
+    "email": "yj.lee@yonsei.ac.kr",
+    "github_username": "entelecheia",
     "description": "A short description of the project.",
-    "open_source_license": ["MIT", "BSD-3-Clause", "No license file"],
+    "version": "0.1.0",
+    "create_author_file": "y",
+    "open_source_license": ["MIT license", "BSD license", "ISC license", "Apache Software License 2.0", "GNU General Public License v3", "Not open source"],
     "s3_bucket": "[OPTIONAL] your-bucket-for-syncing-data (do not include 's3://')",
     "aws_profile": "default",
     "python_interpreter": ["python3", "python"]
