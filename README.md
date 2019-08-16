@@ -54,6 +54,10 @@ The directory structure of your new project looks like this:
 ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
 │                         the creator's initials, and a short `-` delimited description, e.g.
 │                         `1.0-jqp-initial-data-exploration`.
+│   ├── eda            <- Notebooks for Exploratory Data Analysis
+│   ├── poc            <- Notebooks for Proof-of-Concept
+│   ├── modeling       <- Notebooks for model building and training
+│   └── evaluation     <- Notebooks for evaluation
 │
 ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
 │
