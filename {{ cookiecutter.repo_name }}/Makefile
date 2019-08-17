@@ -8,12 +8,16 @@ PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUCKET = {{ cookiecutter.s3_bucket }}
 PROFILE = {{ cookiecutter.aws_profile }}
 PROJECT_NAME = {{ cookiecutter.repo_name }}
-PYTHON_INTERPRETER = {{ cookiecutter.python_interpreter }}
+GITHUB_USERNAME = {{ cookiecutter.github_username }}
+GCLOUD_INSTANCE_NAME = {{ cookiecutter.gcloud_instance_name }}
+GCLOUD_COMPUTE_ZONE = {{ cookiecutter.gcloud_compute_zone }}
+GCLOUD_BUCKET = {{ cookiecutter.gcloud_storage_bucket }}
+GCLOUD_BUCKET_ZONE = {{ cookiecutter.gcloud_storage_zone }}
 
 ifeq (,$(shell which conda))
-HAS_CONDA=False
+	HAS_CONDA=False
 else
-HAS_CONDA=True
+	HAS_CONDA=True
 endif
 
 #################################################################################
@@ -21,12 +25,12 @@ endif
 #################################################################################
 
 ## Install Python Dependencies
-requirements: test_environment
+install_reqs: test_env
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
 ## Make Dataset
-data: requirements
+data: install_reqs
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
 ## Delete all compiled Python files
@@ -37,6 +41,50 @@ clean:
 ## Lint using flake8
 lint:
 	flake8 src
+
+## Create a new repository on GitHub and set the remote as upstream
+init_github:
+	hub create -p ${PROJECT_NAME}
+	git push -u origin master
+
+## Initialize git repository and make the fist commit
+init_git:
+	git init
+	git add --all
+	git commit -m "Make the first commit"
+
+## Bind remote repository to the local repository:
+bind_github:
+	git remote add origin git@github.com:${GITHUB_USERNAME}/${PROJECT_NAME}.git
+	git push -u origin master
+
+## Start Google Cloud Instance
+start_gcloud:
+	gcloud compute instances start $(GCLOUD_INSTANCE_NAME) --zone=${GCLOUD_COMPUTE_ZONE}
+
+## Stop Google Cloud Instance
+stop_gcloud:
+	gcloud compute instances stop $(GCLOUD_INSTANCE_NAME) --zone=${GCLOUD_COMPUTE_ZONE}
+
+## Connect to Google Cloud Instance
+connect_gcloud:
+	gcloud compute ssh --zone=${GCLOUD_COMPUTE_ZONE} jupyter@$(GCLOUD_INSTANCE_NAME) -- -L 8080:localhost:8080
+
+## Create a bucket on Google Storage
+create_gs:
+	gsutil mb -l ${GCLOUD_BUCKET_ZONE} gs://$(GCLOUD_BUCKET)/
+
+## Clean up the bucket on Google Storage
+cleanup_gs:
+	gsutil rm -r gs://$(GCLOUD_BUCKET)/
+
+## Upload Data to Google Storage
+sync_data_to_gs:
+	gsutil rsync -d -r data gs://$(GCLOUD_BUCKET)/data
+
+## Download Data from Google Storage
+sync_data_from_gs:
+	gsutil rsync -d -r gs://$(GCLOUD_BUCKET)/data data
 
 ## Upload Data to S3
 sync_data_to_s3:
@@ -55,7 +103,7 @@ else
 endif
 
 ## Set up python interpreter environment
-create_environment:
+create_env:
 ifeq (True,$(HAS_CONDA))
 		@echo ">>> Detected conda, creating conda environment."
 ifeq (3,$(findstring 3,$(PYTHON_INTERPRETER)))
@@ -72,8 +120,19 @@ else
 	@echo ">>> New virtualenv created. Activate with:\nworkon $(PROJECT_NAME)"
 endif
 
+## Remove python interpreter environment
+remove_env:
+ifeq (True,$(HAS_CONDA))
+	@echo ">>> Detected conda, removing conda environment."
+	conda remove --name $(PROJECT_NAME) --all
+	@echo ">>> Conda env $(PROJECT_NAME) removed."
+else
+	@bash -c "rmvirtualenv $(PROJECT_NAME)"
+	@echo ">>> Virtualenv $(PROJECT_NAME) removed."
+endif
+
 ## Test python environment is setup correctly
-test_environment:
+test_env:
 	$(PYTHON_INTERPRETER) test_environment.py
 
 #################################################################################
