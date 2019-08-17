@@ -8,6 +8,7 @@ PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUCKET = {{ cookiecutter.s3_bucket }}
 PROFILE = {{ cookiecutter.aws_profile }}
 PROJECT_NAME = {{ cookiecutter.repo_name }}
+PYTHON_INTERPRETER = {{ cookiecutter.python_interpreter }}
 GITHUB_USERNAME = {{ cookiecutter.github_username }}
 GCLOUD_INSTANCE_NAME = {{ cookiecutter.gcloud_instance_name }}
 GCLOUD_COMPUTE_ZONE = {{ cookiecutter.gcloud_compute_zone }}
