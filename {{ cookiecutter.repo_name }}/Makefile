@@ -52,7 +52,7 @@ init_github:
 init_git:
 	git init
 	git add --all
-	git commit -m "Make the first commit"
+	git commit -m "initial commit"
 
 ## Bind remote repository to the local repository:
 bind_github:
