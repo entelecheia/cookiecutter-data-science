@@ -71,6 +71,10 @@ stop_gcloud:
 connect_gcloud:
 	gcloud compute ssh --zone=${GCLOUD_COMPUTE_ZONE} jupyter@$(GCLOUD_INSTANCE_NAME) -- -L 8080:localhost:8080
 
+## List Google Compute instances
+list_gcloud:
+	gcloud compute instances list
+
 ## Create a bucket on Google Storage
 create_gs:
 	gsutil mb -l ${GCLOUD_BUCKET_ZONE} gs://$(GCLOUD_BUCKET)/
