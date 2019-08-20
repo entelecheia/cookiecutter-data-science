@@ -43,6 +43,15 @@ clean:
 lint:
 	flake8 src
 
+## Launch Jupyter Notebook
+start_jupyter:
+	nohup jupyter notebook --no-browser --port=8080 --allow-root > .jupyter_error.log & echo $! > .jupyter_pid
+
+## Stop Jupyter Notebook
+stop_jupyter:
+	ps aux | grep jupyter
+	kill -9 $(cat .jupyter_pid)
+
 ## Create a new repository on GitHub and set the remote as upstream
 init_github:
 	hub create -p ${PROJECT_NAME}

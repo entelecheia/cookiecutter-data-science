@@ -87,3 +87,7 @@ target/
 
 # Mypy cache
 .mypy_cache/
+
+# Jupyter
+.jupyter_error.log
+.jupyter_pid
