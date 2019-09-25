@@ -21,103 +21,20 @@ else
 	HAS_CONDA=True
 endif
 
+	HAS_CONDA=True
+endif
+
 #################################################################################
 # COMMANDS                                                                      #
 #################################################################################
 
-## Install Python Dependencies
-install_reqs: test_env
-	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
-	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
-
-## Make Dataset
-data: install_reqs
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
-
-## Delete all compiled Python files
-clean:
-	find . -type f -name "*.py[co]" -delete
-	find . -type d -name "__pycache__" -delete
-
-## Lint using flake8
-lint:
-	flake8 src
-
-## Launch Jupyter Notebook
-start_jupyter:
-	nohup jupyter notebook --no-browser --port=8080 --allow-root > .jupyter_error.log & echo $! > .jupyter_pid
-
-## Stop Jupyter Notebook
-stop_jupyter:
-	ps aux | grep jupyter
-	kill -9 $(cat .jupyter_pid)
-
-## Create a new repository on GitHub and set the remote as upstream
-init_github:
-	hub create -p ${PROJECT_NAME}
-	git push -u origin master
-
-## Initialize git repository and make the fist commit
-init_git:
-	git init
-	git add --all
-	git commit -m "initial commit"
-
-## Bind remote repository to the local repository:
-bind_github:
-	git remote add origin git@github.com:${GITHUB_USERNAME}/${PROJECT_NAME}.git
-	git push -u origin master
-
-## Start Google Cloud Instance
-start_gcloud:
-	gcloud compute instances start $(GCLOUD_INSTANCE_NAME) --zone=${GCLOUD_COMPUTE_ZONE}
-
-## Stop Google Cloud Instance
-stop_gcloud:
-	gcloud compute instances stop $(GCLOUD_INSTANCE_NAME) --zone=${GCLOUD_COMPUTE_ZONE}
-
-## Connect to Google Cloud Instance
-connect_gcloud:
-	gcloud compute ssh --zone=${GCLOUD_COMPUTE_ZONE} jupyter@$(GCLOUD_INSTANCE_NAME) -- -L 8080:localhost:8080
-
-## List Google Compute instances
-list_gcloud:
-	gcloud compute instances list
-
-## Create a bucket on Google Storage
-create_gs:
-	gsutil mb -l ${GCLOUD_BUCKET_ZONE} gs://$(GCLOUD_BUCKET)/
-
-## Clean up the bucket on Google Storage
-cleanup_gs:
-	gsutil rm -r gs://$(GCLOUD_BUCKET)/
-
-## Upload Data to Google Storage
-sync_data_to_gs:
-	gsutil rsync -d -r data gs://$(GCLOUD_BUCKET)/data
-
-## Download Data from Google Storage
-sync_data_from_gs:
-	gsutil rsync -d -r gs://$(GCLOUD_BUCKET)/data data
-
-## Upload Data to S3
-sync_data_to_s3:
-ifeq (default,$(PROFILE))
-	aws s3 sync data/ s3://$(BUCKET)/data/
-else
-	aws s3 sync data/ s3://$(BUCKET)/data/ --profile $(PROFILE)
-endif
-
-## Download Data from S3
-sync_data_from_s3:
-ifeq (default,$(PROFILE))
-	aws s3 sync s3://$(BUCKET)/data/ data/
-else
-	aws s3 sync s3://$(BUCKET)/data/ data/ --profile $(PROFILE)
-endif
+## Run Byobu (terminal multiplexer, F6 - Detach from session) 
+byobu:
+	@echo ">>> Byobu installation command is given below:\n   sudo apt install byobu"
+	byobu
 
 ## Set up python interpreter environment
-create_env:
+nvset:
 ifeq (True,$(HAS_CONDA))
 		@echo ">>> Detected conda, creating conda environment."
 ifeq (3,$(findstring 3,$(PYTHON_INTERPRETER)))
@@ -135,7 +52,7 @@ else
 endif
 
 ## Remove python interpreter environment
-remove_env:
+nvrmv:
 ifeq (True,$(HAS_CONDA))
 	@echo ">>> Detected conda, removing conda environment."
 	conda remove --name $(PROJECT_NAME) --all
@@ -145,9 +62,124 @@ else
 	@echo ">>> Virtualenv $(PROJECT_NAME) removed."
 endif
 
+## Export python interpreter environment
+nvexp:
+ifeq (True,$(HAS_CONDA))
+	@echo ">>> Detected conda, exporting conda environment."
+	conda env export --name $(PROJECT_NAME) --file environment.yml
+	@echo ">>> Conda env $(PROJECT_NAME) exported."
+endif
+
+## Update python interpreter environment
+nvupd:
+ifeq (True,$(HAS_CONDA))
+	@echo ">>> Detected conda, updating conda environment."
+	conda env update --name $(PROJECT_NAME) --file environment.yml --prune
+	@echo ">>> Conda env $(PROJECT_NAME) updated."
+endif
+
 ## Test python environment is setup correctly
-test_env:
+nvtest:
 	$(PYTHON_INTERPRETER) test_environment.py
+
+## Install Python Dependencies
+pyrq: nvtest
+	# $(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
+	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
+
+## Make Dataset
+data: nvtest
+	# $(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
+	sh src/data/make_dataset.sh
+
+## Delete all compiled Python files
+clean:
+	find . -type f -name "*.py[co]" -delete
+	find . -type d -name "__pycache__" -delete
+
+## Lint using flake8
+lint:
+	flake8 src
+
+## Launch Jupyter Notebook
+jon:
+	@echo "nohup jupyter notebook --no-browser --port=8080 --allow-root > .jupyter_error.log &"
+	@bash -c "nohup jupyter notebook --no-browser --port=8080 --allow-root > .jupyter_error_$(shell hostname).log &"
+
+## Stop Jupyter Notebook
+joff:
+	ps aux | grep jupyter
+	@echo "kill -9 #jupyter_pid"
+	
+## Initialize direnv
+direnv:
+	@echo ">>> Install direnv if not already intalled.\n	Ubuntu: sudo apt-get install direnv\n	Mac: brew install direnv\n"
+	direnv allow .
+
+## Create a new repository on GitHub and set the remote as upstream
+ghnew:
+	hub create -p ${PROJECT_NAME}
+	git push -u origin master
+
+## Initialize git repository and make the fist commit
+git1:
+	git init
+	git add --all
+	git commit -m "Make the first commit"
+
+## Bind remote repository to the local repository:
+ghbind:
+	git remote add origin git@github.com:${GITHUB_USERNAME}/${PROJECT_NAME}.git
+	git push -u origin master
+
+## Start Google Cloud Instance
+gcon:
+	gcloud compute instances start $(GCLOUD_INSTANCE_NAME) --zone=${GCLOUD_COMPUTE_ZONE}
+
+## Stop Google Cloud Instance
+gcoff:
+	gcloud compute instances stop $(GCLOUD_INSTANCE_NAME) --zone=${GCLOUD_COMPUTE_ZONE}
+
+## Connect to Google Cloud Instance
+gcssh:
+	gcloud compute ssh --zone=${GCLOUD_COMPUTE_ZONE} jupyter@$(GCLOUD_INSTANCE_NAME) -- -L 8080:localhost:8080
+
+## List Google Compute instances
+gcls:
+	gcloud compute instances list
+	
+## Create a bucket on Google Storage
+gsmb:
+	gsutil mb -l ${GCLOUD_BUCKET_ZONE} gs://$(GCLOUD_BUCKET)/
+
+## Clean up the bucket on Google Storage
+gsrm:
+	gsutil rm -r gs://$(GCLOUD_BUCKET)/
+
+## Upload Data to Google Storage
+gsup:
+	gsutil rsync -d -r data gs://$(GCLOUD_BUCKET)/data
+
+## Download Data from Google Storage
+gsdn:
+	gsutil rsync -d -r gs://$(GCLOUD_BUCKET)/data data
+
+## Upload Data to S3
+s3up:
+ifeq (default,$(PROFILE))
+	aws s3 sync data/ s3://$(BUCKET)/data/
+else
+	aws s3 sync data/ s3://$(BUCKET)/data/ --profile $(PROFILE)
+endif
+
+## Download Data from S3
+s3dn:
+ifeq (default,$(PROFILE))
+	aws s3 sync s3://$(BUCKET)/data/ data/
+else
+	aws s3 sync s3://$(BUCKET)/data/ data/ --profile $(PROFILE)
+endif
+
 
 #################################################################################
 # PROJECT RULES                                                                 #
@@ -197,7 +229,7 @@ help:
 	| LC_ALL='C' sort --ignore-case \
 	| awk -F '---' \
 		-v ncol=$$(tput cols) \
-		-v indent=19 \
+		-v indent=10 \
 		-v col_on="$$(tput setaf 6)" \
 		-v col_off="$$(tput sgr0)" \
 	'{ \
