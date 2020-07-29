@@ -87,7 +87,7 @@ pyrq: nvtest
 ## Make Dataset
 data: nvtest
 	# $(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
-	sh src/data/make_dataset.sh
+	sh main/data/make_dataset.sh
 
 ## Delete all compiled Python files
 clean:
@@ -97,6 +97,11 @@ clean:
 ## Lint using flake8
 lint:
 	flake8 src
+
+## Add Virtual Environment to Jupyter Notebook
+jadd:
+	pip install --user ipykernel
+	python -m ipykernel install --user --name=$(PROJECT_NAME)
 
 ## Launch Jupyter Notebook
 jon:
