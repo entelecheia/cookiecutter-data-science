@@ -9,16 +9,18 @@ BUCKET = {{ cookiecutter.s3_bucket }}
 PROFILE = {{ cookiecutter.aws_profile }}
 PROJECT_NAME = {{ cookiecutter.repo_name }}
 PYTHON_INTERPRETER = {{ cookiecutter.python_interpreter }}
+PYTHON_VERSION = {{ cookiecutter.python_version }}
+VENV_NAME = {{ cookiecutter.repo_name }}-{{ cookiecutter.python_version }} 
 GITHUB_USERNAME = {{ cookiecutter.github_username }}
 GCLOUD_INSTANCE_NAME = {{ cookiecutter.gcloud_instance_name }}
 GCLOUD_COMPUTE_ZONE = {{ cookiecutter.gcloud_compute_zone }}
 GCLOUD_BUCKET = {{ cookiecutter.gcloud_storage_bucket }}
 GCLOUD_BUCKET_ZONE = {{ cookiecutter.gcloud_storage_zone }}
 
-ifeq (,$(shell which conda))
-	HAS_CONDA=False
+ifeq (,$(shell which pyenv))
+	HAS_PYENV=False
 else
-	HAS_CONDA=True
+	HAS_PYENV=True
 endif
 
 #################################################################################
@@ -31,63 +33,58 @@ byobu:
 	byobu
 
 ## Set up python interpreter environment
-nvset:
-ifeq (True,$(HAS_CONDA))
-		@echo ">>> Detected conda, creating conda environment."
-ifeq (3,$(findstring 3,$(PYTHON_INTERPRETER)))
-	conda create --name $(PROJECT_NAME) python=3
+venv-create:
+ifeq (True,$(HAS_PYENV))
+	@echo ">>> Detected pyenv, creating virtual environment."
+	pyenv virtualenv $(PYTHON_VERSION) $(VENV_NAME)
+	pyenv local $(VENV_NAME)	
+	@echo ">>> New virtual env created. Activate with:\npyenv activate $(VENV_NAME)"
 else
-	conda create --name $(PROJECT_NAME) python=2.7
-endif
-		@echo ">>> New conda env created. Activate with:\nconda activate $(PROJECT_NAME)"
-else
-	$(PYTHON_INTERPRETER) -m pip install -q virtualenv virtualenvwrapper
-	@echo ">>> Installing virtualenvwrapper if not already intalled.\nMake sure the following lines are in shell startup file\n\
-	export WORKON_HOME=$$HOME/.virtualenvs\nexport PROJECT_HOME=$$HOME/Devel\nsource /usr/local/bin/virtualenvwrapper.sh\n"
-	@bash -c "source `which virtualenvwrapper.sh`;mkvirtualenv $(PROJECT_NAME) --python=$(PYTHON_INTERPRETER)"
-	@echo ">>> New virtualenv created. Activate with:\nworkon $(PROJECT_NAME)"
+	@echo ">>> pyenv does not exist. install pyenv first."
 endif
 
 ## Remove python interpreter environment
-nvrmv:
-ifeq (True,$(HAS_CONDA))
-	@echo ">>> Detected conda, removing conda environment."
-	conda remove --name $(PROJECT_NAME) --all
-	@echo ">>> Conda env $(PROJECT_NAME) removed."
+venv-delete:
+ifeq (True,$(HAS_PYENV))
+	@echo ">>> Detected pyenv, removing virtual environment."
+	pyenv uninstall $(VENV_NAME)
+	@echo ">>> Virtual env $(VENV_NAME) removed."
 else
-	@bash -c "rmvirtualenv $(PROJECT_NAME)"
-	@echo ">>> Virtualenv $(PROJECT_NAME) removed."
+	@echo ">>> pyenv does not exist. install pyenv first."
 endif
 
-## Export python interpreter environment
-nvexp:
-ifeq (True,$(HAS_CONDA))
-	@echo ">>> Detected conda, exporting conda environment."
-	conda env export --name $(PROJECT_NAME) --file environment.yml
-	@echo ">>> Conda env $(PROJECT_NAME) exported."
+## Export python interpreter environment 
+## TODO: use poetry
+poetry-export:
+ifeq (True,$(HAS_PYENV))
+	@echo ">>> Detected pyenv, exporting virtual environment."
+	poetry export -f requirements.txt --output requirements-poetry.txt --without-hashes
+	@echo ">>> Virtual env $(VENV_NAME) exported."
+else
+	@echo ">>> pyenv does not exist. install pyenv first."
 endif
 
 ## Update python interpreter environment
-nvupd:
-ifeq (True,$(HAS_CONDA))
+poetry-install:
+ifeq (True,$(HAS_PYENV))
 	@echo ">>> Detected conda, updating conda environment."
-	conda env update --name $(PROJECT_NAME) --file environment.yml --prune
-	@echo ">>> Conda env $(PROJECT_NAME) updated."
+	poetry install
+	@echo ">>> Virtual env $(VENV_NAME) updated."
 endif
 
 ## Test python environment is setup correctly
-nvtest:
+py-test:
 	$(PYTHON_INTERPRETER) test_environment.py
 
 ## Install Python Dependencies
-pyrq: nvtest
+pip-req: py-test
 	# $(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
 ## Make Dataset
-data: nvtest
-	# $(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
-	sh main/data/make_dataset.sh
+data-make: py-test
+	# $(PYTHON_INTERPRETER) {{ cookiecutter.repo_name }}/data/make_dataset.py data/raw data/processed
+	sh {{ cookiecutter.repo_name }}/data/make_dataset.sh
 
 ## Delete all compiled Python files
 clean:
@@ -99,75 +96,70 @@ lint:
 	flake8 src
 
 ## Add Virtual Environment to Jupyter Notebook
-jadd:
+ipykernel-install:
 	pip install --user ipykernel
-	python -m ipykernel install --user --name=$(PROJECT_NAME)
+	python -m ipykernel install --user --name=$(VENV_NAME)
 
 ## Launch Jupyter Notebook
-jon:
+nb-run:
 	@echo "nohup jupyter notebook --no-browser --port=8080 --allow-root > .jupyter_error.log &"
 	@bash -c "nohup jupyter notebook --no-browser --port=8080 --allow-root > .jupyter_error_$(shell hostname).log &"
 
 ## Stop Jupyter Notebook
-joff:
+nb-kill:
 	ps aux | grep jupyter
 	@echo "kill -9 #jupyter_pid"
 	
-## Initialize direnv
-direnv:
-	@echo ">>> Install direnv if not already intalled.\n	Ubuntu: sudo apt-get install direnv\n	Mac: brew install direnv\n"
-	direnv allow .
-
 ## Create a new repository on GitHub and set the remote as upstream
-ghnew:
+github-create:
 	hub create -p ${PROJECT_NAME}
-	git push -u origin master
+	git push -u origin main
 
 ## Initialize git repository and make the fist commit
-git1:
+git-init:
 	git init
 	git add --all
 	git commit -m "Make the first commit"
 
 ## Bind remote repository to the local repository:
-ghbind:
+github-bind:
 	git remote add origin git@github.com:${GITHUB_USERNAME}/${PROJECT_NAME}.git
-	git push -u origin master
+	git push -u origin main
 
 ## Start Google Cloud Instance
-gcon:
+gc-on:
 	gcloud compute instances start $(GCLOUD_INSTANCE_NAME) --zone=${GCLOUD_COMPUTE_ZONE}
 
 ## Stop Google Cloud Instance
-gcoff:
+gc-off:
 	gcloud compute instances stop $(GCLOUD_INSTANCE_NAME) --zone=${GCLOUD_COMPUTE_ZONE}
 
 ## Connect to Google Cloud Instance
-gcssh:
+gc-ssh:
 	gcloud compute ssh --zone=${GCLOUD_COMPUTE_ZONE} jupyter@$(GCLOUD_INSTANCE_NAME) -- -L 8080:localhost:8080
 
 ## List Google Compute instances
-gcls:
+gc-ls:
 	gcloud compute instances list
 	
 ## Create a bucket on Google Storage
-gsmb:
+gs-mb:
 	gsutil mb -l ${GCLOUD_BUCKET_ZONE} gs://$(GCLOUD_BUCKET)/
 
 ## Clean up the bucket on Google Storage
-gsrm:
+gs-rm:
 	gsutil rm -r gs://$(GCLOUD_BUCKET)/
 
 ## Upload Data to Google Storage
-gsup:
+gs-up:
 	gsutil rsync -d -r data gs://$(GCLOUD_BUCKET)/data
 
 ## Download Data from Google Storage
-gsdn:
+gs-dn:
 	gsutil rsync -d -r gs://$(GCLOUD_BUCKET)/data data
 
 ## Upload Data to S3
-s3up:
+s3-up:
 ifeq (default,$(PROFILE))
 	aws s3 sync data/ s3://$(BUCKET)/data/
 else
@@ -175,7 +167,7 @@ else
 endif
 
 ## Download Data from S3
-s3dn:
+s3-dn:
 ifeq (default,$(PROFILE))
 	aws s3 sync s3://$(BUCKET)/data/ data/
 else
