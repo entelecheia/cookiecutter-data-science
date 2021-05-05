@@ -7,7 +7,8 @@
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUCKET = {{ cookiecutter.s3_bucket }}
 PROFILE = {{ cookiecutter.aws_profile }}
-PROJECT_NAME = {{ cookiecutter.repo_name }}
+PROJECT_NAME = {{ cookiecutter.project_name }}
+REPO_NAME = {{ cookiecutter.repo_name }}
 PROJECT_DESC = {{ cookiecutter.description }}
 LICENSE = {{ cookiecutter.open_source_license }}
 PYTHON_INTERPRETER = {{ cookiecutter.python_interpreter }}
@@ -45,7 +46,8 @@ venv-create:
 ifeq (True,$(HAS_PYENV))
 	@echo ">>> Detected pyenv, creating virtual environment."
 	pyenv virtualenv $(PYTHON_VERSION) $(VENV_NAME)
-	pyenv local $(VENV_NAME)	
+	pyenv local $(VENV_NAME)
+	pip install --upgrade pip
 	@echo ">>> New virtual env created. Activate with:\npyenv activate $(VENV_NAME)"
 else
 	@echo ">>> pyenv does not exist. install pyenv first."
@@ -155,7 +157,7 @@ git-init:
 
 ## Bind remote repository to the local repository:
 github-bind:
-	git remote add origin git@github.com:${GITHUB_USERNAME}/${PROJECT_NAME}.git
+	git remote add origin https://github.com/${GITHUB_USERNAME}/${PROJECT_NAME}.git
 	git push -u origin main
 
 ## Start Google Cloud Instance
