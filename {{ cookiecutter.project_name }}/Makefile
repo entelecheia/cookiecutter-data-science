@@ -9,6 +9,7 @@ BUCKET = {{ cookiecutter.s3_bucket }}
 PROFILE = {{ cookiecutter.aws_profile }}
 PROJECT_NAME = {{ cookiecutter.repo_name }}
 PROJECT_DESC = {{ cookiecutter.description }}
+LICENSE = {{ cookiecutter.open_source_license }}
 PYTHON_INTERPRETER = {{ cookiecutter.python_interpreter }}
 PYTHON_VERSION = {{ cookiecutter.python_version }}
 VENV_NAME = {{ cookiecutter.repo_name }}-{{ cookiecutter.python_version }} 
@@ -64,7 +65,7 @@ endif
 poetry-init:
 ifeq (True,$(HAS_POETRY))
 	@echo ">>> Detected poetry, initiate poetry project."
-	poetry init --description="$(PROJECT_DESC)"
+	poetry init --description="$(PROJECT_DESC) --license="$(LICENSE)"
 else
 	@echo ">>> poetry does not exist. install poetry first."
 endif
@@ -73,7 +74,7 @@ endif
 poetry-add-dotenv:
 ifeq (True,$(HAS_POETRY))
 	@echo ">>> Detected poetry, initiate poetry project."
-	poetry add python-dotenv
+	poetry add python-dotenv --dev
 else
 	@echo ">>> poetry does not exist. install poetry first."
 endif
@@ -123,9 +124,13 @@ lint:
 
 ## Add Virtual Environment to Jupyter Notebook
 ipykernel-install:
-	@echo "After run following commands, modify pyenv venv path in kernel.json"
-	@echo "pip install --user ipykernel"
-	@echo "python -m ipykernel install --user --name=$(VENV_NAME)"
+	@echo "After run following commands, check pyenv venv path in kernel.json\n"
+ifeq (True,$(HAS_POETRY))
+	poetry add ipykernel --dev 
+else
+	pip install ipykernel
+endif
+	python -m ipykernel install --user --name=$(VENV_NAME)
 
 ## Launch Jupyter Notebook
 nb-run:
