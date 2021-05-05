@@ -1,7 +1,7 @@
 {
     "project_name": "project_name",
     "repo_name": "{{ cookiecutter.project_name.lower().replace(' ', '_') }}",
-    "author_name": "Youngjoon Lee",
+    "author_name": "Young Joon Lee",
     "email": "yj.lee@yonsei.ac.kr",
     "github_username": "entelecheia",
     "description": "A short description of the project.",
