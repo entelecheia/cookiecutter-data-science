@@ -8,6 +8,7 @@ PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BUCKET = {{ cookiecutter.s3_bucket }}
 PROFILE = {{ cookiecutter.aws_profile }}
 PROJECT_NAME = {{ cookiecutter.repo_name }}
+PROJECT_DESC = {{ cookiecutter.description }}
 PYTHON_INTERPRETER = {{ cookiecutter.python_interpreter }}
 PYTHON_VERSION = {{ cookiecutter.python_version }}
 VENV_NAME = {{ cookiecutter.repo_name }}-{{ cookiecutter.python_version }} 
@@ -23,13 +24,19 @@ else
 	HAS_PYENV=True
 endif
 
+ifeq (,$(shell which poetry))
+	HAS_POETRY=False
+else
+	HAS_POETRY=True
+endif
+
 #################################################################################
 # COMMANDS                                                                      #
 #################################################################################
 
 ## Run Byobu (terminal multiplexer, F6 - Detach from session) 
 byobu:
-	@echo ">>> Byobu installation command is given below:\n   sudo apt install byobu"
+	@echo ">>> Byobu installation command is given below:\n   sudo apt install byobu\n    brew install byobu"
 	byobu
 
 ## Set up python interpreter environment
@@ -53,23 +60,42 @@ else
 	@echo ">>> pyenv does not exist. install pyenv first."
 endif
 
+## Initiate poetry
+poetry-init:
+ifeq (True,$(HAS_POETRY))
+	@echo ">>> Detected poetry, initiate poetry project."
+	poetry init --description="$(PROJECT_DESC)"
+else
+	@echo ">>> poetry does not exist. install poetry first."
+endif
+
+## Install dotevn
+poetry-add-dotenv:
+ifeq (True,$(HAS_POETRY))
+	@echo ">>> Detected poetry, initiate poetry project."
+	poetry add python-dotenv
+else
+	@echo ">>> poetry does not exist. install poetry first."
+endif
+
 ## Export python interpreter environment 
-## TODO: use poetry
 poetry-export:
-ifeq (True,$(HAS_PYENV))
-	@echo ">>> Detected pyenv, exporting virtual environment."
+ifeq (True,$(HAS_POETRY))
+	@echo ">>> Detected poetry, exporting virtual environment."
 	poetry export -f requirements.txt --output requirements-poetry.txt --without-hashes
 	@echo ">>> Virtual env $(VENV_NAME) exported."
 else
-	@echo ">>> pyenv does not exist. install pyenv first."
+	@echo ">>> poetry does not exist. install poetry first."
 endif
 
 ## Update python interpreter environment
 poetry-install:
-ifeq (True,$(HAS_PYENV))
-	@echo ">>> Detected conda, updating conda environment."
+ifeq (True,$(HAS_POETRY))
+	@echo ">>> Detected poetry, install poetry packages from pyproject.toml."
 	poetry install
 	@echo ">>> Virtual env $(VENV_NAME) updated."
+else
+	@echo ">>> poetry does not exist. install poetry first."
 endif
 
 ## Test python environment is setup correctly
@@ -97,8 +123,9 @@ lint:
 
 ## Add Virtual Environment to Jupyter Notebook
 ipykernel-install:
-	pip install --user ipykernel
-	python -m ipykernel install --user --name=$(VENV_NAME)
+	@echo "After run following commands, modify pyenv venv path in kernel.json"
+	@echo "pip install --user ipykernel"
+	@echo "python -m ipykernel install --user --name=$(VENV_NAME)"
 
 ## Launch Jupyter Notebook
 nb-run:
@@ -223,7 +250,7 @@ help:
 	| LC_ALL='C' sort --ignore-case \
 	| awk -F '---' \
 		-v ncol=$$(tput cols) \
-		-v indent=10 \
+		-v indent=20 \
 		-v col_on="$$(tput setaf 6)" \
 		-v col_off="$$(tput sgr0)" \
 	'{ \
