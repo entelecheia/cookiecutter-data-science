@@ -65,7 +65,7 @@ endif
 poetry-init:
 ifeq (True,$(HAS_POETRY))
 	@echo ">>> Detected poetry, initiate poetry project."
-	poetry init --description="$(PROJECT_DESC) --license="$(LICENSE)"
+	poetry init --description="$(PROJECT_DESC)" --license="$(LICENSE)"
 else
 	@echo ">>> poetry does not exist. install poetry first."
 endif
@@ -123,7 +123,7 @@ lint:
 	flake8 src
 
 ## Add Virtual Environment to Jupyter Notebook
-ipykernel-install:
+ipykernel:
 	@echo "After run following commands, check pyenv venv path in kernel.json\n"
 ifeq (True,$(HAS_POETRY))
 	poetry add ipykernel --dev 
