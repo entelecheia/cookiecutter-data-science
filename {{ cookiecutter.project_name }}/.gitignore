@@ -1,7 +1,6 @@
 # poetry
 poetry.lock
 
-
 # vs code history folder
 .history/
 
@@ -64,7 +63,7 @@ docs/_build/
 target/
 
 # DotEnv configuration
-.env
+# .env
 
 # Database
 *.db
