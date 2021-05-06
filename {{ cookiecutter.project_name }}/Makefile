@@ -36,6 +36,10 @@ endif
 # COMMANDS                                                                      #
 #################################################################################
 
+## Symbolic to to data folder
+lns-data:
+	sh .symlink-to-data.sh
+
 ## Run Byobu (terminal multiplexer, F6 - Detach from session) 
 byobu:
 	@echo ">>> Byobu installation command is given below:\n   sudo apt install byobu\n    brew install byobu"
