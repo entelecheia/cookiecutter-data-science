@@ -40,6 +40,10 @@ endif
 lns-data:
 	sh .symlink-to-data.sh
 
+## Symbolic to to models folder
+lns-models:
+	sh .symlink-to-models.sh
+
 ## Run Byobu (terminal multiplexer, F6 - Detach from session) 
 byobu:
 	@echo ">>> Byobu installation command is given below:\n   sudo apt install byobu\n    brew install byobu"
